@@ -242,8 +242,11 @@ export default function DoctorAppointments() {
                     <CheckCircle2 size={14} /> Treatment Completed
                   </span>
                 )}
-          })}
-        </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
       )}
     </div>
   );
