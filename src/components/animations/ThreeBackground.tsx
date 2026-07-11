@@ -20,9 +20,9 @@ export default function ThreeBackground() {
     );
     camera.position.z = 8;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     container.appendChild(renderer.domElement);
 
     // Create a rotating 3D particle sphere
@@ -112,23 +112,32 @@ export default function ThreeBackground() {
     toothGroup.scale.set(1.2, 1.2, 1.2);
     scene.add(toothGroup);
 
-    // Animation loop
+    // Animation loop (throttled to 30 FPS for optimal background performance)
     let animationFrameId: number;
+    let lastFrameTime = 0;
+    const fpsLimit = 30;
+    const frameInterval = 1000 / fpsLimit;
 
-    const animate = () => {
+    const animate = (time: number) => {
+      animationFrameId = requestAnimationFrame(animate);
+
+      const delta = time - lastFrameTime;
+      if (delta < frameInterval) return;
+
+      lastFrameTime = time - (delta % frameInterval);
+
       // Slow rotation of outer particle constellation
       particleSystem.rotation.y -= 0.001;
       particleSystem.rotation.x -= 0.0005;
 
       // Rotate the 3D tooth
       toothGroup.rotation.y += 0.005;
-      toothGroup.rotation.x = Math.sin(Date.now() * 0.0005) * 0.15; // Sway back and forth slightly
+      toothGroup.rotation.x = Math.sin(time * 0.0005) * 0.15; // Sway back and forth slightly
 
       renderer.render(scene, camera);
-      animationFrameId = requestAnimationFrame(animate);
     };
 
-    animate();
+    requestAnimationFrame(animate);
 
     // Handle viewport resize
     const handleResize = () => {

@@ -193,12 +193,20 @@ export default function DoctorAppointments() {
                 )}
 
                 {app.status === "CONFIRMED" && (
-                  <button
-                    onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 1" })}
-                    className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md flex items-center gap-1.5"
-                  >
-                    <Armchair size={14} /> Mark Arrived (Assign Chair)
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 1" })}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
+                    >
+                      <Armchair size={12} /> Arrived (Chair 1)
+                    </button>
+                    <button
+                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 2" })}
+                      className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
+                    >
+                      <Armchair size={12} /> Arrived (Chair 2)
+                    </button>
+                  </div>
                 )}
 
                 {app.status === "ARRIVED" && (

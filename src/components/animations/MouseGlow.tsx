@@ -1,25 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export default function MouseGlow() {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [visible, setVisible] = useState(false);
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Only show on desktop
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     if (isMobile) return;
 
+    const glow = glowRef.current;
+    if (!glow) return;
+
     const handleMouseMove = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY });
-      setVisible(true);
+      // Direct DOM mutation for style updates bypasses React render tree
+      // and keeps CPU/GPU load near zero!
+      glow.style.transform = `translate3d(${e.clientX - 200}px, ${e.clientY - 200}px, 0)`;
+      glow.style.opacity = "1";
     };
 
-    const handleMouseLeave = () => setVisible(false);
+    const handleMouseLeave = () => {
+      if (glow) glow.style.opacity = "0";
+    };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    document.addEventListener("mouseleave", handleMouseLeave, { passive: true });
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
@@ -27,19 +33,18 @@ export default function MouseGlow() {
     };
   }, []);
 
-  if (!visible) return null;
-
   return (
     <div
-      className="fixed pointer-events-none z-[9999] transition-opacity duration-300"
+      ref={glowRef}
+      className="fixed pointer-events-none z-[9999] opacity-0 transition-opacity duration-300"
       style={{
-        left: position.x - 200,
-        top: position.y - 200,
+        left: 0,
+        top: 0,
         width: 400,
         height: 400,
         background:
           "radial-gradient(circle, rgba(59,99,247,0.06) 0%, transparent 70%)",
-        opacity: visible ? 1 : 0,
+        willChange: "transform, opacity", // Hint to GPU to composite this layer
       }}
     />
   );

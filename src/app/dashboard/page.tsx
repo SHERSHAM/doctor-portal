@@ -41,8 +41,8 @@ export default function DoctorDashboard() {
         if (data.appointments) {
           setAppointments(data.appointments);
           
-          // Compute today's counts
-          const todayStr = new Date().toISOString().split("T")[0];
+          // Compute today's counts (using Swedish locale to get YYYY-MM-DD in local timezone)
+          const todayStr = new Date().toLocaleDateString("sv-SE");
           const todayAppts = data.appointments.filter((a: any) => a.date === todayStr);
           const waiting = todayAppts.filter((a: any) => a.status === "ARRIVED" || a.status === "PENDING");
           const completed = todayAppts.filter((a: any) => a.status === "COMPLETED");
@@ -53,22 +53,20 @@ export default function DoctorDashboard() {
             completedCount: completed.length,
           });
 
-          // Sync chairs based on active appointments in status IN_PROGRESS/ARRIVED
+          // Sync chairs based on active appointments in status ARRIVED matching specific chair number
           const activeChairs = [
             { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
             { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
           ];
           
-          let chairIdx = 0;
           todayAppts.forEach((app: any) => {
-            if (app.status === "ARRIVED" && chairIdx < 2) {
-              activeChairs[chairIdx] = {
-                id: `Chair ${chairIdx + 1}`,
-                patient: app.user?.name || "Patient",
-                status: "Occupied (Arrived)",
-                color: "text-amber-400 bg-amber-950/20 border-amber-900/30",
-              };
-              chairIdx++;
+            if (app.status === "ARRIVED" && app.chairNumber) {
+              const chair = activeChairs.find((c) => c.id === app.chairNumber);
+              if (chair) {
+                chair.patient = app.user?.name || "Patient";
+                chair.status = "Occupied (Arrived)";
+                chair.color = "text-amber-400 bg-amber-950/20 border-amber-900/30";
+              }
             }
           });
           setChairs(activeChairs);
