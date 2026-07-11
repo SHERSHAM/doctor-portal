@@ -56,7 +56,7 @@ export default function DoctorAppointments() {
     const todayStr = `${year}-${month}-${day}`;
 
     const sessionDurationMs = 20 * 60 * 60 * 1000;
-    const isSessionUpdate = (Date.now() - new Date(app.updatedAt).getTime()) < sessionDurationMs;
+    const isSessionUpdate = (Date.now() - new Date(app.updatedAt).getTime()) < sessionDurationMs && app.date <= todayStr;
 
     // Check if the appointment matches selectedDate (or active session if selectedDate is today)
     const isDateMatch = selectedDate === todayStr 

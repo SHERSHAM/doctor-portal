@@ -1313,14 +1313,21 @@ h1, h2, h3, h4, h5, h6 {
   --foreground: #0f172a;
 }
 
+.light-theme.min-h-screen {
+  background-color: #f8fafc !important;
+}
+
 .light-theme,
-.light-theme .min-h-screen,
-.light-theme.min-h-screen,
 .light-theme .bg-slate-950,
 .light-theme.bg-slate-950,
 .light-theme .bg-slate-900 {
-  background-color: #f8fafc !important;
   color: #0f172a !important;
+}
+
+/* Ensure inner viewport and layout panels are transparent so WebGL background is visible */
+.light-theme .flex-1.flex-col,
+.light-theme main {
+  background-color: transparent !important;
 }
 
 /* Sidebar and Header background overrides */
