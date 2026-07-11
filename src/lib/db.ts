@@ -9,6 +9,9 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+  ssl: connectionString && !connectionString.includes("localhost") && !connectionString.includes("127.0.0.1")
+    ? { rejectUnauthorized: false }
+    : undefined,
 });
 
 const adapter = new PrismaPg(pool);
