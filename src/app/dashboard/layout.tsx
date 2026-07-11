@@ -23,6 +23,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [doctor, setDoctor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("doctor_portal_theme") as "dark" | "light";
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("doctor_portal_theme", nextTheme);
+  };
 
   // Authenticate session on mount
   useEffect(() => {
@@ -70,7 +84,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-100 font-sans antialiased relative overflow-hidden">
+    <div className={`min-h-screen flex bg-slate-950 text-slate-100 font-sans antialiased relative overflow-hidden ${
+      theme === "light" ? "light-theme" : "dark"
+    }`}>
       {/* Background visual components */}
       <div className="absolute top-[-30%] left-[-20%] w-[70%] h-[70%] rounded-full bg-primary-900/10 blur-[130px] pointer-events-none z-0" />
       <div className="absolute bottom-[-30%] right-[-20%] w-[70%] h-[70%] rounded-full bg-teal-900/10 blur-[130px] pointer-events-none z-0" />
@@ -161,6 +177,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center cursor-pointer"
+              aria-label="Toggle Theme"
+            >
+              {theme === "dark" ? (
+                // Sun Icon (switching to light)
+                <svg className="w-4.5 h-4.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+                </svg>
+              ) : (
+                // Moon Icon (switching to dark)
+                <svg className="w-4.5 h-4.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+
             <div className="flex items-center gap-1.5 text-xs text-teal-400 bg-teal-950/40 border border-teal-800/30 px-3 py-1 rounded-full font-semibold">
               <HeartPulse size={12} className="animate-pulse" /> Clinic Active
             </div>
