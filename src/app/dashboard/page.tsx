@@ -77,7 +77,7 @@ export default function DoctorDashboard() {
           // Today's consultations: scheduled for selectedDate OR updated within the active session duration (if selectedDate is today)
           const todayAppts = data.appointments.filter((a: any) => {
             const isScheduledSelected = a.date === selectedDate;
-            const isSessionUpdate = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs;
+            const isSessionUpdate = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs && a.date <= todayStr;
             if (selectedDate === todayStr) {
               return isScheduledSelected || isSessionUpdate;
             } else {
@@ -85,18 +85,21 @@ export default function DoctorDashboard() {
             }
           });
           
-          // Queue waiting: Any checked-in patient (ARRIVED) OR selected date's pending/confirmed visits
+          // Queue waiting: Any checked-in patient (ARRIVED) on selected date OR selected date's pending/confirmed visits
           const waiting = data.appointments.filter((a: any) => {
-            const isArrived = a.status === "ARRIVED";
-            const isTodayPending = a.date === selectedDate && (a.status === "PENDING" || a.status === "CONFIRMED");
-            return isArrived || isTodayPending;
+            const isSelectedDate = a.date === selectedDate;
+            const isRecentSession = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs && a.date <= todayStr;
+            const isArrived = a.status === "ARRIVED" && (isSelectedDate || (selectedDate === todayStr && isRecentSession));
+            const isPendingConfirmed = isSelectedDate && (a.status === "PENDING" || a.status === "CONFIRMED");
+            return isArrived || isPendingConfirmed;
           });
           
           // Completed: Any completed treatment scheduled for selected date OR completed during the active session (if selectedDate is today)
           const completed = data.appointments.filter((a: any) => {
             const isCompleted = a.status === "COMPLETED";
+            const isRecentSession = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs && a.date <= todayStr;
             const isTodayOrSession = a.date === selectedDate || 
-              (selectedDate === todayStr && (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs);
+              (selectedDate === todayStr && isRecentSession);
             return isCompleted && isTodayOrSession;
           });
 
