@@ -26,7 +26,45 @@ export default function DoctorAppointments() {
   const [skippedRxApptIds, setSkippedRxApptIds] = useState<string[]>([]);
   const [viewingRxApptId, setViewingRxApptId] = useState<string | null>(null);
 
+  // Date selection states
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth());
+
+  useEffect(() => {
+    if (selectedDate) {
+      const [y, m] = selectedDate.split("-");
+      setCurrentYear(Number(y));
+      setCurrentMonth(Number(m) - 1);
+    }
+  }, [selectedDate]);
+
   const filteredAppointments = appointments.filter((app) => {
+    const isScheduledSelected = app.date === selectedDate;
+    
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    const sessionDurationMs = 20 * 60 * 60 * 1000;
+    const isSessionUpdate = (Date.now() - new Date(app.updatedAt).getTime()) < sessionDurationMs;
+
+    // Check if the appointment matches selectedDate (or active session if selectedDate is today)
+    const isDateMatch = selectedDate === todayStr 
+      ? (isScheduledSelected || isSessionUpdate) 
+      : isScheduledSelected;
+
+    if (!isDateMatch) return false;
+
     if (activeTab === "active") {
       return app.status !== "COMPLETED";
     } else {
@@ -160,13 +198,203 @@ export default function DoctorAppointments() {
     setInlineMeds(updated);
   };
 
+  // Calendar helpers
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+  const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
+  
+  const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth);
+  
+  const calendarCells: any[] = [];
+  
+  // Pad previous month days
+  for (let i = firstDay - 1; i >= 0; i--) {
+    calendarCells.push({
+      day: daysInPrevMonth - i,
+      month: prevMonth,
+      year: prevYear,
+      isCurrentMonth: false,
+    });
+  }
+  
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    calendarCells.push({
+      day: i,
+      month: currentMonth,
+      year: currentYear,
+      isCurrentMonth: true,
+    });
+  }
+  
+  // Pad next month days to have exactly 42 cells (6 rows)
+  const remainingCells = 42 - calendarCells.length;
+  const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+  const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+  for (let i = 1; i <= remainingCells; i++) {
+    calendarCells.push({
+      day: i,
+      month: nextMonth,
+      year: nextYear,
+      isCurrentMonth: false,
+    });
+  }
+
+  const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  const DAYS_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const handleSelectDay = (cell: typeof calendarCells[0]) => {
+    const year = cell.year;
+    const month = String(cell.month + 1).padStart(2, "0");
+    const day = String(cell.day).padStart(2, "0");
+    setSelectedDate(`${year}-${month}-${day}`);
+    setCalendarOpen(false);
+  };
+
+  const handleJumpToToday = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    setSelectedDate(`${year}-${month}-${day}`);
+    setCalendarOpen(false);
+  };
+
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const [y, m, d] = dateStr.split("-");
+      const date = new Date(Number(y), Number(m) - 1, Number(d));
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="space-y-8 relative z-10">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-heading font-black text-slate-100 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
-          Clinical Schedules
-        </h1>
-        <p className="text-slate-400 text-sm">Verify patient check-ins, record observation notes, and assign chairs</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/40 pb-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-heading font-black text-slate-100 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+            Clinical Schedules
+          </h1>
+          <p className="text-slate-400 text-sm">Verify patient check-ins, record observation notes, and assign chairs by date</p>
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => setCalendarOpen(!calendarOpen)}
+            className="flex items-center gap-2 bg-slate-950/60 border border-slate-800/80 px-4 py-2.5 rounded-2xl shadow-md hover:bg-slate-900/80 transition-all text-xs font-bold text-slate-200"
+          >
+            <Calendar size={14} className="text-teal-400" />
+            <span>{formatDisplayDate(selectedDate)}</span>
+          </button>
+
+          {calendarOpen && (
+            <div className="absolute right-0 mt-2 p-4 w-72 rounded-3xl border border-slate-800 bg-slate-950/95 backdrop-blur-xl shadow-2xl z-50 space-y-4">
+              {/* Header */}
+              <div className="flex justify-between items-center text-slate-200">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors font-bold text-sm"
+                >
+                  &larr;
+                </button>
+                <span className="font-bold text-[11px] uppercase tracking-wider text-slate-300">
+                  {MONTHS[currentMonth]} {currentYear}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 transition-colors font-bold text-sm"
+                >
+                  &rarr;
+                </button>
+              </div>
+
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {DAYS_SHORT.map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+
+              {/* Day cells */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {calendarCells.map((cell, idx) => {
+                  const [y, m, d] = selectedDate.split("-");
+                  const isSelected =
+                    cell.day === Number(d) &&
+                    cell.month === Number(m) - 1 &&
+                    cell.year === Number(y);
+                  
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectDay(cell)}
+                      className={`h-7 w-7 text-[11px] font-semibold rounded-lg flex items-center justify-center transition-all ${
+                        isSelected
+                          ? "bg-teal-500 text-slate-950 shadow-md shadow-teal-500/20 font-extrabold"
+                          : cell.isCurrentMonth
+                          ? "text-slate-300 hover:bg-slate-900"
+                          : "text-slate-600 hover:bg-slate-900/50"
+                      }`}
+                    >
+                      {cell.day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Jump Buttons */}
+              <div className="flex justify-between pt-2 border-t border-slate-800/60 text-[10px]">
+                <button
+                  type="button"
+                  onClick={handleJumpToToday}
+                  className="text-teal-400 font-bold hover:text-teal-300 transition-colors"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarOpen(false)}
+                  className="text-slate-500 font-bold hover:text-slate-400 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tab Switcher */}
