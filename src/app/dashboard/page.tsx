@@ -16,6 +16,13 @@ import Link from "next/link";
 export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
   const [stats, setStats] = useState({
     todayCount: 0,
     waitingCount: 0,
@@ -43,7 +50,7 @@ export default function DoctorDashboard() {
         if (data.appointments) {
           setAppointments(data.appointments);
           
-          // Compute today's date string manually (YYYY-MM-DD) to be 100% browser-compatible and timezone-safe
+          // Compute today's date string manually (YYYY-MM-DD) to compare
           const d = new Date();
           const year = d.getFullYear();
           const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -54,24 +61,29 @@ export default function DoctorDashboard() {
           const sessionDurationMs = 20 * 60 * 60 * 1000;
           const nowMs = Date.now();
 
-          // Today's consultations: scheduled for today OR updated within the active session duration
+          // Today's consultations: scheduled for selectedDate OR updated within the active session duration (if selectedDate is today)
           const todayAppts = data.appointments.filter((a: any) => {
-            const isScheduledToday = a.date === todayStr;
+            const isScheduledSelected = a.date === selectedDate;
             const isSessionUpdate = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs;
-            return isScheduledToday || isSessionUpdate;
+            if (selectedDate === todayStr) {
+              return isScheduledSelected || isSessionUpdate;
+            } else {
+              return isScheduledSelected;
+            }
           });
           
-          // Queue waiting: Any checked-in patient (ARRIVED) OR today's pending/confirmed visits that are waiting to be seen
+          // Queue waiting: Any checked-in patient (ARRIVED) OR selected date's pending/confirmed visits
           const waiting = data.appointments.filter((a: any) => {
             const isArrived = a.status === "ARRIVED";
-            const isTodayPending = a.date === todayStr && (a.status === "PENDING" || a.status === "CONFIRMED");
+            const isTodayPending = a.date === selectedDate && (a.status === "PENDING" || a.status === "CONFIRMED");
             return isArrived || isTodayPending;
           });
           
-          // Completed: Any completed treatment that was either scheduled for today OR completed during the active session
+          // Completed: Any completed treatment scheduled for selected date OR completed during the active session (if selectedDate is today)
           const completed = data.appointments.filter((a: any) => {
             const isCompleted = a.status === "COMPLETED";
-            const isTodayOrSession = a.date === todayStr || (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs;
+            const isTodayOrSession = a.date === selectedDate || 
+              (selectedDate === todayStr && (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs);
             return isCompleted && isTodayOrSession;
           });
 
@@ -90,7 +102,12 @@ export default function DoctorDashboard() {
           ];
           
           data.appointments.forEach((app: any) => {
-            if (app.status === "ARRIVED" && app.chairNumber) {
+            // Display active chairs if checked in, but only if they are associated with the selected date (or active session)
+            const isArrived = app.status === "ARRIVED";
+            const isSelectedDate = app.date === selectedDate;
+            const isRecentSession = (nowMs - new Date(app.updatedAt).getTime()) < sessionDurationMs;
+            
+            if (isArrived && app.chairNumber && (isSelectedDate || (selectedDate === todayStr && isRecentSession))) {
               const chair = activeChairs.find((c) => c.id === app.chairNumber);
               if (chair) {
                 chair.patient = app.user?.name || "Patient";
@@ -104,17 +121,46 @@ export default function DoctorDashboard() {
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedDate]);
+
+  // Filter appointments for the selected date (including active session updates if selectedDate is today)
+  const dayAppointments = appointments.filter((app) => {
+    const isScheduledSelected = app.date === selectedDate;
+    
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    const sessionDurationMs = 20 * 60 * 60 * 1000;
+    const isSessionUpdate = (Date.now() - new Date(app.updatedAt).getTime()) < sessionDurationMs;
+
+    if (selectedDate === todayStr) {
+      return isScheduledSelected || isSessionUpdate;
+    } else {
+      return isScheduledSelected;
+    }
+  });
 
   return (
     <div className="space-y-8 relative z-10">
-      {/* Welcome Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Welcome Banner & Date Picker */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/40 pb-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-heading font-black text-slate-100 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
             Clinical Workspace
           </h1>
-          <p className="text-slate-400 text-sm">Review today's chair assignments, queue wait times, and treatments list</p>
+          <p className="text-slate-400 text-sm">Review chair allocations, queue status, and completed treatments by day</p>
+        </div>
+        <div className="flex items-center gap-2 bg-slate-950/60 border border-slate-800/80 px-4 py-2 rounded-2xl shadow-inner max-w-xs self-start md:self-auto">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Date:</span>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-transparent text-xs text-slate-200 font-bold focus:outline-none border-none [color-scheme:dark] cursor-pointer"
+          />
         </div>
       </div>
 
@@ -173,7 +219,7 @@ export default function DoctorDashboard() {
           <div className="bg-slate-900/40 border border-slate-800/80 backdrop-blur-md rounded-3xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-heading font-bold text-slate-100 text-base flex items-center gap-2">
-                <ClipboardList size={18} className="text-teal-400" /> Today's Consultation Queue
+                <ClipboardList size={18} className="text-teal-400" /> Consultation Queue
               </h2>
               <Link href="/dashboard/appointments" className="text-xs text-teal-400 hover:text-teal-300 font-semibold flex items-center gap-1">
                 View All <ArrowRight size={14} />
@@ -184,13 +230,13 @@ export default function DoctorDashboard() {
               <div className="text-center py-6">
                 <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mx-auto" />
               </div>
-            ) : appointments.length === 0 ? (
+            ) : dayAppointments.length === 0 ? (
               <div className="text-center py-8 text-slate-500 text-sm">
-                🎉 No consultations scheduled for today.
+                🎉 No consultations scheduled for this date.
               </div>
             ) : (
               <div className="divide-y divide-slate-800/60 max-h-[300px] overflow-y-auto pr-1">
-                {appointments.slice(0, 5).map((app) => (
+                {dayAppointments.slice(0, 5).map((app) => (
                   <div key={app.id} className="py-4 flex items-center justify-between gap-4 first:pt-0 last:pb-0">
                     <div>
                       <h4 className="font-bold text-slate-200 text-sm">{app.user?.name || "Patient"}</h4>
