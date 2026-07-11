@@ -47,7 +47,8 @@ export default function DoctorAppointments() {
     }
   }, [selectedDate]);
 
-  const filteredAppointments = appointments.filter((app) => {
+  // Get all appointments matching the selected date
+  const dayAppointmentsList = appointments.filter((app) => {
     const isScheduledSelected = app.date === selectedDate;
     
     const d = new Date();
@@ -59,13 +60,15 @@ export default function DoctorAppointments() {
     const sessionDurationMs = 20 * 60 * 60 * 1000;
     const isSessionUpdate = (Date.now() - new Date(app.updatedAt).getTime()) < sessionDurationMs && app.date <= todayStr;
 
-    // Check if the appointment matches selectedDate (or active session if selectedDate is today)
-    const isDateMatch = selectedDate === todayStr 
+    return selectedDate === todayStr 
       ? (isScheduledSelected || isSessionUpdate) 
       : isScheduledSelected;
+  });
 
-    if (!isDateMatch) return false;
+  const activeCount = dayAppointmentsList.filter((a) => a.status !== "COMPLETED").length;
+  const completedCount = dayAppointmentsList.filter((a) => a.status === "COMPLETED").length;
 
+  const filteredAppointments = dayAppointmentsList.filter((app) => {
     if (activeTab === "active") {
       return app.status !== "COMPLETED";
     } else {
@@ -423,7 +426,7 @@ export default function DoctorAppointments() {
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          Active Queue ({appointments.filter(a => a.status !== "COMPLETED").length})
+          Active Queue ({activeCount})
         </button>
         <button
           onClick={() => setActiveTab("completed")}
@@ -433,7 +436,7 @@ export default function DoctorAppointments() {
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
-          Completed Treatments ({appointments.filter(a => a.status === "COMPLETED").length})
+          Completed Treatments ({completedCount})
         </button>
       </div>
 
