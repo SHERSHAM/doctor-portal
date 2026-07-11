@@ -50,15 +50,30 @@ export default function DoctorDashboard() {
           const day = String(d.getDate()).padStart(2, "0");
           const todayStr = `${year}-${month}-${day}`;
 
-          const todayAppts = data.appointments.filter((a: any) => a.date === todayStr);
+          // A session lasts 20 hours to capture late-night operations spanning past midnight
+          const sessionDurationMs = 20 * 60 * 60 * 1000;
+          const nowMs = Date.now();
+
+          // Today's consultations: scheduled for today OR updated within the active session duration
+          const todayAppts = data.appointments.filter((a: any) => {
+            const isScheduledToday = a.date === todayStr;
+            const isSessionUpdate = (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs;
+            return isScheduledToday || isSessionUpdate;
+          });
           
           // Queue waiting: Any checked-in patient (ARRIVED) OR today's pending/confirmed visits that are waiting to be seen
-          const waiting = data.appointments.filter(
-            (a: any) => a.status === "ARRIVED" || (a.date === todayStr && (a.status === "PENDING" || a.status === "CONFIRMED"))
-          );
+          const waiting = data.appointments.filter((a: any) => {
+            const isArrived = a.status === "ARRIVED";
+            const isTodayPending = a.date === todayStr && (a.status === "PENDING" || a.status === "CONFIRMED");
+            return isArrived || isTodayPending;
+          });
           
-          // Completed: Lifetime successfully completed treatments
-          const completed = data.appointments.filter((a: any) => a.status === "COMPLETED");
+          // Completed: Any completed treatment that was either scheduled for today OR completed during the active session
+          const completed = data.appointments.filter((a: any) => {
+            const isCompleted = a.status === "COMPLETED";
+            const isTodayOrSession = a.date === todayStr || (nowMs - new Date(a.updatedAt).getTime()) < sessionDurationMs;
+            return isCompleted && isTodayOrSession;
+          });
 
           setStats({
             todayCount: todayAppts.length,
