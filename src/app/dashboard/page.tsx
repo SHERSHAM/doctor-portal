@@ -43,10 +43,21 @@ export default function DoctorDashboard() {
         if (data.appointments) {
           setAppointments(data.appointments);
           
-          // Compute counts: Today's scheduled visits, total active waiting queue, and total completed treatments
-          const todayStr = new Date().toLocaleDateString("sv-SE");
+          // Compute today's date string manually (YYYY-MM-DD) to be 100% browser-compatible and timezone-safe
+          const d = new Date();
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          const todayStr = `${year}-${month}-${day}`;
+
           const todayAppts = data.appointments.filter((a: any) => a.date === todayStr);
-          const waiting = data.appointments.filter((a: any) => a.status === "ARRIVED" || a.status === "PENDING");
+          
+          // Queue waiting: Any checked-in patient (ARRIVED) OR today's pending/confirmed visits that are waiting to be seen
+          const waiting = data.appointments.filter(
+            (a: any) => a.status === "ARRIVED" || (a.date === todayStr && (a.status === "PENDING" || a.status === "CONFIRMED"))
+          );
+          
+          // Completed: Lifetime successfully completed treatments
           const completed = data.appointments.filter((a: any) => a.status === "COMPLETED");
 
           setStats({
