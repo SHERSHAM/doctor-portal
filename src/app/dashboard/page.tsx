@@ -43,11 +43,11 @@ export default function DoctorDashboard() {
         if (data.appointments) {
           setAppointments(data.appointments);
           
-          // Compute today's counts (using Swedish locale to get YYYY-MM-DD in local timezone)
+          // Compute counts: Today's scheduled visits, total active waiting queue, and total completed treatments
           const todayStr = new Date().toLocaleDateString("sv-SE");
           const todayAppts = data.appointments.filter((a: any) => a.date === todayStr);
-          const waiting = todayAppts.filter((a: any) => a.status === "ARRIVED" || a.status === "PENDING");
-          const completed = todayAppts.filter((a: any) => a.status === "COMPLETED");
+          const waiting = data.appointments.filter((a: any) => a.status === "ARRIVED" || a.status === "PENDING");
+          const completed = data.appointments.filter((a: any) => a.status === "COMPLETED");
 
           setStats({
             todayCount: todayAppts.length,
