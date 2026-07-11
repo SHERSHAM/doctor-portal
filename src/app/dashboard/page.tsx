@@ -43,11 +43,11 @@ export default function DoctorDashboard() {
   }, [selectedDate]);
 
   // Chair allocations (4 distinct active chairs)
-  const [chairs, setChairs] = useState([
-    { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-    { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-    { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-    { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+  const [chairs, setChairs] = useState<any[]>([
+    { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+    { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+    { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+    { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
   ]);
 
   // Reception notifications/messages
@@ -108,10 +108,10 @@ export default function DoctorDashboard() {
 
           // Sync chairs based on active appointments in status ARRIVED matching specific chair number
           const activeChairs = [
-            { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-            { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-            { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
-            { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+            { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+            { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+            { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
+            { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30", prescription: null },
           ];
           
           data.appointments.forEach((app: any) => {
@@ -126,6 +126,9 @@ export default function DoctorDashboard() {
                 chair.patient = app.user?.name || "Patient";
                 chair.status = "Occupied (Arrived)";
                 chair.color = "text-amber-400 bg-amber-950/20 border-amber-900/30";
+                chair.prescription = app.prescriptions && app.prescriptions.length > 0
+                  ? app.prescriptions[0]
+                  : null;
               }
             }
           });
@@ -234,6 +237,14 @@ export default function DoctorDashboard() {
       });
     } catch (e) {
       return dateStr;
+    }
+  };
+
+  const parseMedicines = (jsonStr: string) => {
+    try {
+      return JSON.parse(jsonStr) || [];
+    } catch (e) {
+      return [];
     }
   };
 
@@ -393,15 +404,36 @@ export default function DoctorDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {chairs.map((chair) => (
-                <div key={chair.id} className="p-4 rounded-2xl border border-slate-800/40 bg-slate-950/40 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg text-slate-300">💺</div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-xs text-slate-200">{chair.id}</span>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${chair.color}`}>{chair.status}</span>
+                <div key={chair.id} className="p-4 rounded-2xl border border-slate-800/40 bg-slate-950/40 flex flex-col gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg text-slate-300">💺</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-xs text-slate-200">{chair.id}</span>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${chair.color}`}>{chair.status}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 truncate mt-1">{chair.patient}</p>
                     </div>
-                    <p className="text-xs text-slate-400 truncate mt-1">{chair.patient}</p>
                   </div>
+
+                  {/* Prescription Section */}
+                  {chair.prescription && (
+                    <div className="pt-3 border-t border-slate-850 space-y-1.5">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Rx Prescribed:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {parseMedicines(chair.prescription.medicines).map((med: any, idx: number) => (
+                          <span key={idx} className="inline-flex items-center gap-1 text-[9px] font-bold bg-slate-900 border border-slate-800 text-teal-400 px-2 py-0.5 rounded-lg">
+                            💊 {med.name} ({med.dosage})
+                          </span>
+                        ))}
+                      </div>
+                      {chair.prescription.instructions && (
+                        <p className="text-[10px] text-slate-500 italic mt-1 leading-relaxed">
+                          Note: {chair.prescription.instructions}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
