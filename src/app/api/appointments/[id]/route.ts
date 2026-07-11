@@ -32,7 +32,7 @@ export async function PATCH(
     if (notes !== undefined) updateData.notes = notes;
     if (chairNumber !== undefined) updateData.chairNumber = chairNumber;
 
-    if (status === "COMPLETED") {
+    if (status === "CONFIRMED" || status === "ARRIVED" || status === "COMPLETED") {
       updateData.doctorName = session.name;
       updateData.doctorId = session.userId;
     }

@@ -25,6 +25,7 @@ export default function DoctorAppointments() {
   const [inlineGenInstructions, setInlineGenInstructions] = useState("");
   const [skippedRxApptIds, setSkippedRxApptIds] = useState<string[]>([]);
   const [viewingRxApptId, setViewingRxApptId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Date selection states
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -74,6 +75,15 @@ export default function DoctorAppointments() {
 
   useEffect(() => {
     fetchAppointments();
+    // Fetch doctor session details
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.user) {
+          setCurrentUser(data.user);
+        }
+      })
+      .catch((err) => console.error(err));
   }, []);
 
   const fetchAppointments = (silent = false) => {
@@ -92,10 +102,16 @@ export default function DoctorAppointments() {
   };
 
   const updateStatus = async (id: string, status: string, additional: any = {}) => {
+    const docInfo: any = {};
+    if ((status === "CONFIRMED" || status === "ARRIVED" || status === "COMPLETED") && currentUser) {
+      docInfo.doctorName = currentUser.name;
+      docInfo.doctorId = currentUser.userId;
+    }
+
     // Optimistic UI update: immediately change status locally before network request completes
     setAppointments((prev) =>
       prev.map((app) =>
-        app.id === id ? { ...app, status, ...additional } : app
+        app.id === id ? { ...app, status, ...additional, ...docInfo } : app
       )
     );
 
