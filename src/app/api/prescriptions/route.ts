@@ -28,15 +28,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    // Create prescription in database
-    const prescription = await db.prescription.create({
-      data: {
-        appointmentId,
-        medicines: typeof medicines === "string" ? medicines : JSON.stringify(medicines),
-        instructions,
-        signedBy: session.name,
-      },
+    // Check if prescription already exists for this appointment to perform an update
+    const existingPrescription = await db.prescription.findFirst({
+      where: { appointmentId },
     });
+
+    let prescription;
+    if (existingPrescription) {
+      prescription = await db.prescription.update({
+        where: { id: existingPrescription.id },
+        data: {
+          medicines: typeof medicines === "string" ? medicines : JSON.stringify(medicines),
+          instructions,
+          signedBy: session.name,
+        },
+      });
+    } else {
+      prescription = await db.prescription.create({
+        data: {
+          appointmentId,
+          medicines: typeof medicines === "string" ? medicines : JSON.stringify(medicines),
+          instructions,
+          signedBy: session.name,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -24,6 +24,7 @@ export default function DoctorAppointments() {
   ]);
   const [inlineGenInstructions, setInlineGenInstructions] = useState("");
   const [skippedRxApptIds, setSkippedRxApptIds] = useState<string[]>([]);
+  const [viewingRxApptId, setViewingRxApptId] = useState<string | null>(null);
 
   const filteredAppointments = appointments.filter((app) => {
     if (activeTab === "active") {
@@ -386,6 +387,47 @@ export default function DoctorAppointments() {
                       </button>
                     </div>
                   )}
+
+                  {/* Expanded Prescription Viewer Details */}
+                  {viewingRxApptId === app.id && app.prescriptions && app.prescriptions.length > 0 && (() => {
+                    const rx = app.prescriptions[0];
+                    let meds = [];
+                    try {
+                      meds = JSON.parse(rx.medicines) || [];
+                    } catch (e) {
+                      meds = [];
+                    }
+                    
+                    return (
+                      <div className="mt-4 p-5 rounded-2xl border border-slate-850 bg-slate-950/40 space-y-3 max-w-xl">
+                        <div className="flex justify-between items-center pb-2 border-b border-slate-850">
+                          <h4 className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                            💊 Prescribed Medications
+                          </h4>
+                          <span className="text-[9px] text-slate-500 font-semibold">Signed by {rx.signedBy || "Doctor"}</span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {meds.map((med: any, idx: number) => (
+                            <div key={idx} className="flex justify-between items-center text-xs py-1.5 border-b border-slate-900 last:border-none">
+                              <span className="font-bold text-slate-200">💊 {med.name}</span>
+                              <div className="flex gap-3 text-slate-400 font-semibold">
+                                <span>Dosage: {med.dosage}</span>
+                                <span>Timing: {med.instructions}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {rx.instructions && (
+                          <div className="pt-2 border-t border-slate-900">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Doctor Instructions:</span>
+                            <p className="text-xs text-slate-300 italic mt-0.5 leading-relaxed">{rx.instructions}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -481,11 +523,56 @@ export default function DoctorAppointments() {
                   );
                 })()}
 
-                {app.status === "COMPLETED" && (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-green-400 bg-green-950/20 border border-green-900/30 px-4 py-2 rounded-xl">
-                    <CheckCircle2 size={14} /> Treatment Completed
-                  </span>
-                )}
+                {app.status === "COMPLETED" && (() => {
+                  const hasRx = app.prescriptions && app.prescriptions.length > 0;
+                  
+                  return (
+                    <div className="flex flex-col gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-green-400 bg-green-950/20 border border-green-900/30 px-3 py-1.5 rounded-xl justify-center">
+                        <CheckCircle2 size={12} /> Treatment Completed
+                      </span>
+                      
+                      {hasRx ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setViewingRxApptId(viewingRxApptId === app.id ? null : app.id)}
+                            className="px-2.5 py-1.5 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                          >
+                            👁️ {viewingRxApptId === app.id ? "Hide Rx" : "View Rx"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const rx = app.prescriptions[0];
+                              let parsed = [];
+                              try {
+                                parsed = JSON.parse(rx.medicines) || [];
+                              } catch(e) {
+                                parsed = [];
+                              }
+                              setInlineMeds(parsed);
+                              setInlineGenInstructions(rx.instructions || "");
+                              setPrescribingApptId(app.id);
+                            }}
+                            className="px-2.5 py-1.5 bg-teal-950/40 text-teal-400 border border-teal-900/30 hover:bg-teal-900/40 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
+                          >
+                            ✏️ Edit Rx
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setPrescribingApptId(app.id);
+                            setInlineMeds([{ name: "", dosage: "", instructions: "" }]);
+                            setInlineGenInstructions("");
+                          }}
+                          className="px-3 py-1.5 bg-slate-900 border border-slate-800 text-slate-400 hover:bg-slate-800 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 justify-center"
+                        >
+                          ➕ Add Rx
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
