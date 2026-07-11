@@ -234,6 +234,11 @@ export default function DoctorAppointments() {
                       <Armchair size={12} /> {app.chairNumber}
                     </span>
                   )}
+                  {app.doctorName && (
+                    <span className="px-3 py-1 rounded-full bg-slate-950/40 border border-slate-800/60 text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      👨‍⚕️ {app.status === "COMPLETED" ? "Treated by" : "Assigned"}: {app.doctorName}
+                    </span>
+                  )}
                   <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
                     app.status === "COMPLETED" 
                       ? "bg-green-950/20 text-green-400 border border-green-900/30" 

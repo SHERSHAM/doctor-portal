@@ -32,6 +32,11 @@ export async function PATCH(
     if (notes !== undefined) updateData.notes = notes;
     if (chairNumber !== undefined) updateData.chairNumber = chairNumber;
 
+    if (status === "COMPLETED") {
+      updateData.doctorName = session.name;
+      updateData.doctorId = session.userId;
+    }
+
     // Update appointment
     const updatedAppointment = await db.appointment.update({
       where: { id },
