@@ -18,6 +18,12 @@ export default function DoctorAppointments() {
   const [notesText, setNotesText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+  const [prescribingApptId, setPrescribingApptId] = useState<string | null>(null);
+  const [inlineMeds, setInlineMeds] = useState<Array<{ name: string; dosage: string; instructions: string }>>([
+    { name: "", dosage: "", instructions: "" }
+  ]);
+  const [inlineGenInstructions, setInlineGenInstructions] = useState("");
+  const [skippedRxApptIds, setSkippedRxApptIds] = useState<string[]>([]);
 
   const filteredAppointments = appointments.filter((app) => {
     if (activeTab === "active") {
@@ -104,6 +110,53 @@ export default function DoctorAppointments() {
   const handleEditNotes = (id: string, currentNotes: string) => {
     setEditingNotesId(id);
     setNotesText(currentNotes || "");
+  };
+
+  const handleSaveInlinePrescription = async (apptId: string) => {
+    if (inlineMeds.some(m => !m.name)) {
+      alert("Please enter a name for the medicine.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/prescriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: apptId,
+          medicines: inlineMeds,
+          instructions: inlineGenInstructions,
+        }),
+      });
+
+      if (response.ok) {
+        setPrescribingApptId(null);
+        setInlineMeds([{ name: "", dosage: "", instructions: "" }]);
+        setInlineGenInstructions("");
+        fetchAppointments(true); // Silent background fetch to show "Complete & Bill" button!
+      } else {
+        alert("Failed to save prescription.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while saving the prescription.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddInlineMed = () => {
+    setInlineMeds([...inlineMeds, { name: "", dosage: "", instructions: "" }]);
+  };
+
+  const handleRemoveInlineMed = (idx: number) => {
+    setInlineMeds(inlineMeds.filter((_, i) => i !== idx));
+  };
+
+  const handleInlineMedChange = (idx: number, field: string, val: string) => {
+    const updated = [...inlineMeds];
+    updated[idx] = { ...updated[idx], [field]: val };
+    setInlineMeds(updated);
   };
 
   return (
@@ -239,6 +292,100 @@ export default function DoctorAppointments() {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Inline Prescription Writer Form */}
+                  {prescribingApptId === app.id && (
+                    <div className="mt-4 p-5 rounded-2xl border border-slate-850 bg-slate-950/40 space-y-4 max-w-xl relative z-25">
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-850">
+                        <h4 className="text-[10px] font-bold text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+                          💊 Digital Prescription Form
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => setPrescribingApptId(null)}
+                          className="text-[10px] text-slate-500 hover:text-slate-400 font-bold"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      {/* Medicines List */}
+                      <div className="space-y-3">
+                        {inlineMeds.map((med, idx) => (
+                          <div key={idx} className="flex gap-2 items-end border-b border-slate-850/40 pb-3 last:border-none last:pb-0">
+                            <div className="flex-1 space-y-1">
+                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Medicine Name</label>
+                              <input
+                                type="text"
+                                value={med.name}
+                                onChange={(e) => handleInlineMedChange(idx, "name", e.target.value)}
+                                placeholder="e.g. Paracetamol 650mg"
+                                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 focus:border-teal-500 outline-none text-xs text-slate-200 placeholder-slate-700"
+                              />
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Dosage</label>
+                              <input
+                                type="text"
+                                value={med.dosage}
+                                onChange={(e) => handleInlineMedChange(idx, "dosage", e.target.value)}
+                                placeholder="e.g. 1-0-1"
+                                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 focus:border-teal-500 outline-none text-xs text-slate-200 placeholder-slate-700"
+                              />
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">Timing</label>
+                              <input
+                                type="text"
+                                value={med.instructions}
+                                onChange={(e) => handleInlineMedChange(idx, "instructions", e.target.value)}
+                                placeholder="e.g. Post Meals"
+                                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 focus:border-teal-500 outline-none text-xs text-slate-200 placeholder-slate-700"
+                              />
+                            </div>
+                            {inlineMeds.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveInlineMed(idx)}
+                                className="p-2 bg-slate-900 hover:bg-rose-950/20 hover:text-rose-400 border border-slate-800 rounded-lg text-xs text-slate-400 font-bold transition-all h-9"
+                              >
+                                &times;
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddInlineMed}
+                        className="text-[10px] font-bold text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                      >
+                        + Add Medication
+                      </button>
+
+                      {/* General Instructions */}
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">General Instructions & Care Notes</label>
+                        <textarea
+                          rows={2}
+                          value={inlineGenInstructions}
+                          onChange={(e) => setInlineGenInstructions(e.target.value)}
+                          placeholder="e.g. Warm saline rinse after 24 hrs. Avoid spicy food..."
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 focus:border-teal-500 outline-none text-xs resize-none text-slate-200 placeholder-slate-700"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSaveInlinePrescription(app.id)}
+                        disabled={submitting}
+                        className="w-full py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Save size={12} /> {submitting ? "Saving..." : "Save & Sync Prescription"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -288,14 +435,51 @@ export default function DoctorAppointments() {
                   </div>
                 )}
 
-                {app.status === "ARRIVED" && (
-                  <button
-                    onClick={() => updateStatus(app.id, "COMPLETED")}
-                    className="px-4 py-2.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 shadow-md flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 size={14} /> Complete & Bill
-                  </button>
-                )}
+                {app.status === "ARRIVED" && (() => {
+                  const hasRx = app.prescriptions && app.prescriptions.length > 0;
+                  const isSkipped = skippedRxApptIds.includes(app.id);
+
+                  if (hasRx || isSkipped) {
+                    return (
+                      <div className="flex flex-col gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border text-center w-full ${
+                          hasRx 
+                            ? "bg-teal-950/20 text-teal-400 border-teal-900/30" 
+                            : "bg-slate-900 text-slate-400 border-slate-850"
+                        }`}>
+                          {hasRx ? "✓ Prescription Linked" : "✗ Prescription Skipped"}
+                        </span>
+                        <button
+                          onClick={() => updateStatus(app.id, "COMPLETED")}
+                          className="px-4 py-2.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 shadow-md flex items-center gap-1.5 justify-center active:scale-[0.98] transition-all"
+                        >
+                          <CheckCircle2 size={14} /> Complete & Bill
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => {
+                          setPrescribingApptId(app.id);
+                          setInlineMeds([{ name: "", dosage: "", instructions: "" }]);
+                          setInlineGenInstructions("");
+                        }}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-slate-950 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 justify-center active:scale-[0.98] transition-all"
+                      >
+                        💊 Write Prescription
+                      </button>
+                      <button
+                        onClick={() => setSkippedRxApptIds([...skippedRxApptIds, app.id])}
+                        className="px-4 py-2 border border-slate-700 hover:bg-slate-850 text-slate-300 rounded-xl text-xs font-bold transition-all hover:bg-slate-800"
+                      >
+                        Skip Prescription
+                      </button>
+                    </div>
+                  );
+                })()}
 
                 {app.status === "COMPLETED" && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-green-400 bg-green-950/20 border border-green-900/30 px-4 py-2 rounded-xl">
