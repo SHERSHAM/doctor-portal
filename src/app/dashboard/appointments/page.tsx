@@ -193,18 +193,30 @@ export default function DoctorAppointments() {
                 )}
 
                 {app.status === "CONFIRMED" && (
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 1" })}
                       className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
                     >
-                      <Armchair size={12} /> Arrived (Chair 1)
+                      <Armchair size={12} /> Chair 1
                     </button>
                     <button
                       onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 2" })}
                       className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
                     >
-                      <Armchair size={12} /> Arrived (Chair 2)
+                      <Armchair size={12} /> Chair 2
+                    </button>
+                    <button
+                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 3" })}
+                      className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
+                    >
+                      <Armchair size={12} /> Chair 3
+                    </button>
+                    <button
+                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 4" })}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
+                    >
+                      <Armchair size={12} /> Chair 4
                     </button>
                   </div>
                 )}

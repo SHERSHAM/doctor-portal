@@ -22,10 +22,12 @@ export default function DoctorDashboard() {
     completedCount: 0,
   });
 
-  // Chair allocations
+  // Chair allocations (4 distinct active chairs)
   const [chairs, setChairs] = useState([
     { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
     { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+    { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+    { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
   ]);
 
   // Reception notifications/messages
@@ -57,6 +59,8 @@ export default function DoctorDashboard() {
           const activeChairs = [
             { id: "Chair 1", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
             { id: "Chair 2", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+            { id: "Chair 3", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
+            { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
           ];
           
           todayAppts.forEach((app: any) => {
