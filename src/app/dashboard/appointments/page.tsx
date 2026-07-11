@@ -98,8 +98,17 @@ export default function DoctorAppointments() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {appointments.map((app) => (
-            <div key={app.id} className="bg-slate-900/40 border border-slate-800/80 backdrop-blur-md p-6 rounded-3xl shadow-2xl flex flex-col xl:flex-row xl:items-start justify-between gap-6">
+          {appointments.map((app) => {
+            // Find chairs currently occupied by other checked-in patients
+            const occupiedChairs = appointments
+              .filter((a) => a.status === "ARRIVED")
+              .map((a) => a.chairNumber);
+            const availableChairs = ["Chair 1", "Chair 2", "Chair 3", "Chair 4"].filter(
+              (chair) => !occupiedChairs.includes(chair)
+            );
+
+            return (
+              <div key={app.id} className="bg-slate-900/40 border border-slate-800/80 backdrop-blur-md p-6 rounded-3xl shadow-2xl flex flex-col xl:flex-row xl:items-start justify-between gap-6">
               <div className="space-y-4 flex-1">
                 {/* Meta details */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -194,30 +203,28 @@ export default function DoctorAppointments() {
 
                 {app.status === "CONFIRMED" && (
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 1" })}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
-                    >
-                      <Armchair size={12} /> Chair 1
-                    </button>
-                    <button
-                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 2" })}
-                      className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
-                    >
-                      <Armchair size={12} /> Chair 2
-                    </button>
-                    <button
-                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 3" })}
-                      className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
-                    >
-                      <Armchair size={12} /> Chair 3
-                    </button>
-                    <button
-                      onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: "Chair 4" })}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all"
-                    >
-                      <Armchair size={12} /> Chair 4
-                    </button>
+                    {availableChairs.length > 0 ? (
+                      availableChairs.map((chair) => {
+                        let bgClass = "bg-indigo-600 hover:bg-indigo-700";
+                        if (chair === "Chair 2") bgClass = "bg-teal-600 hover:bg-teal-700";
+                        if (chair === "Chair 3") bgClass = "bg-blue-600 hover:bg-blue-700";
+                        if (chair === "Chair 4") bgClass = "bg-emerald-600 hover:bg-emerald-700";
+
+                        return (
+                          <button
+                            key={chair}
+                            onClick={() => updateStatus(app.id, "ARRIVED", { chairNumber: chair })}
+                            className={`px-3.5 py-2 ${bgClass} text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 active:scale-[0.98] transition-all`}
+                          >
+                            <Armchair size={12} /> {chair}
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <span className="text-xs font-bold text-rose-400 bg-rose-950/20 border border-rose-900/30 px-3 py-1.5 rounded-xl flex items-center gap-1">
+                        ⚠️ All Chairs Occupied
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -235,9 +242,7 @@ export default function DoctorAppointments() {
                     <CheckCircle2 size={14} /> Treatment Completed
                   </span>
                 )}
-              </div>
-            </div>
-          ))}
+          })}
         </div>
       )}
     </div>
