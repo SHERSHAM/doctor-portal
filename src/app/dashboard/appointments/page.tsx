@@ -31,8 +31,8 @@ export default function DoctorAppointments() {
     fetchAppointments();
   }, []);
 
-  const fetchAppointments = () => {
-    setLoading(true);
+  const fetchAppointments = (silent = false) => {
+    if (!silent) setLoading(true);
     fetch("/api/appointments")
       .then((res) => res.json())
       .then((data) => {
@@ -41,10 +41,19 @@ export default function DoctorAppointments() {
         }
       })
       .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   };
 
   const updateStatus = async (id: string, status: string, additional: any = {}) => {
+    // Optimistic UI update: immediately change status locally before network request completes
+    setAppointments((prev) =>
+      prev.map((app) =>
+        app.id === id ? { ...app, status, ...additional } : app
+      )
+    );
+
     try {
       const response = await fetch(`/api/appointments/${id}`, {
         method: "PATCH",
@@ -53,15 +62,24 @@ export default function DoctorAppointments() {
       });
 
       if (response.ok) {
-        fetchAppointments();
+        fetchAppointments(true); // Silent background fetch
+      } else {
+        // Revert in case of failure
+        fetchAppointments(true);
       }
     } catch (error) {
       console.error(error);
+      fetchAppointments(true);
     }
   };
 
   const saveNotes = async (id: string) => {
     setSubmitting(true);
+    // Optimistic notes update
+    setAppointments((prev) =>
+      prev.map((app) => (app.id === id ? { ...app, notes: notesText } : app))
+    );
+
     try {
       const response = await fetch(`/api/appointments/${id}`, {
         method: "PATCH",
@@ -71,10 +89,13 @@ export default function DoctorAppointments() {
 
       if (response.ok) {
         setEditingNotesId(null);
-        fetchAppointments();
+        fetchAppointments(true); // Silent background fetch
+      } else {
+        fetchAppointments(true);
       }
     } catch (error) {
       console.error(error);
+      fetchAppointments(true);
     } finally {
       setSubmitting(false);
     }
