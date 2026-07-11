@@ -17,6 +17,15 @@ export default function DoctorAppointments() {
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+
+  const filteredAppointments = appointments.filter((app) => {
+    if (activeTab === "active") {
+      return app.status !== "COMPLETED";
+    } else {
+      return app.status === "COMPLETED";
+    }
+  });
 
   useEffect(() => {
     fetchAppointments();
@@ -85,20 +94,50 @@ export default function DoctorAppointments() {
         <p className="text-slate-400 text-sm">Verify patient check-ins, record observation notes, and assign chairs</p>
       </div>
 
+      {/* Tab Switcher */}
+      <div className="flex gap-2 border-b border-slate-800/60 pb-px">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all px-4 ${
+            activeTab === "active"
+              ? "border-indigo-500 text-slate-100 font-extrabold"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Active Queue ({appointments.filter(a => a.status !== "COMPLETED").length})
+        </button>
+        <button
+          onClick={() => setActiveTab("completed")}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all px-4 ${
+            activeTab === "completed"
+              ? "border-green-500 text-slate-100 font-extrabold"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          Completed Treatments ({appointments.filter(a => a.status === "COMPLETED").length})
+        </button>
+      </div>
+
       {loading ? (
         <div className="text-center py-12 bg-slate-900/40 border border-slate-800/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mx-auto" />
           <p className="text-xs text-slate-500 mt-2">Loading appointments schedule...</p>
         </div>
-      ) : appointments.length === 0 ? (
+      ) : filteredAppointments.length === 0 ? (
         <div className="text-center py-12 bg-slate-900/40 border border-slate-800/80 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
           <span className="text-4xl block mb-2">📅</span>
-          <h4 className="font-bold text-slate-200 text-sm">No Appointments Scheduled</h4>
-          <p className="text-xs text-slate-500 mt-1">There are no patient visits logged in the clinic system.</p>
+          <h4 className="font-bold text-slate-200 text-sm">
+            {activeTab === "active" ? "No Active Appointments" : "No Completed Treatments"}
+          </h4>
+          <p className="text-xs text-slate-500 mt-1">
+            {activeTab === "active" 
+              ? "All patients have been successfully processed, or there are no new visits." 
+              : "No treatments have been marked as completed in this session."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {appointments.map((app) => {
+          {filteredAppointments.map((app) => {
             // Find chairs currently occupied by other checked-in patients
             const occupiedChairs = appointments
               .filter((a) => a.status === "ARRIVED")
