@@ -63,7 +63,7 @@ export default function DoctorDashboard() {
             { id: "Chair 4", patient: "No active patient", status: "Available", color: "text-green-400 bg-green-950/20 border-green-900/30" },
           ];
           
-          todayAppts.forEach((app: any) => {
+          data.appointments.forEach((app: any) => {
             if (app.status === "ARRIVED" && app.chairNumber) {
               const chair = activeChairs.find((c) => c.id === app.chairNumber);
               if (chair) {
