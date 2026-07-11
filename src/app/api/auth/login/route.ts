@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("Login API Error:", error);
     return NextResponse.json(
-      { error: "Something went wrong. Please try again." },
+      { error: error.message || "Something went wrong. Please try again." },
       { status: 500 }
     );
   }
