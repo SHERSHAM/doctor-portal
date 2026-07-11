@@ -1,0 +1,59 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  phone        String?       @unique
+  passwordHash String
+  role         String        @default("PATIENT") // PATIENT, DOCTOR, ADMIN
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+}
+
+model Appointment {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctorId      String         // Store the slug of the doctor
+  doctorName    String
+  date          String         // ISO date string '2026-07-12'
+  time          String         // Time slot e.g., '10:30 AM'
+  reason        String?
+  notes         String?        // Clinical notes or observation
+  status        String         @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED, ARRIVED
+  chairNumber   String?        // Assigned dental chair (e.g. Chair 1)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  invoices      Invoice[]
+  prescriptions Prescription[]
+}
+
+model Invoice {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  amount        Float
+  status        String      @default("UNPAID") // UNPAID, PAID
+  date          DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Prescription {
+  id            String      @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  medicines     String      // JSON string of list of medicines (name, dosage, instruction)
+  instructions  String?     // General notes or follow-up days
+  signedBy      String      // Doctor name
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
