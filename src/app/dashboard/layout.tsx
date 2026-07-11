@@ -88,12 +88,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       theme === "light" ? "light-theme" : "dark"
     }`}>
       {/* Background visual components */}
-      <div className="absolute top-[-30%] left-[-20%] w-[70%] h-[70%] rounded-full bg-primary-900/10 blur-[130px] pointer-events-none z-0" />
-      <div className="absolute bottom-[-30%] right-[-20%] w-[70%] h-[70%] rounded-full bg-teal-900/10 blur-[130px] pointer-events-none z-0" />
+      <div className={`absolute top-[-30%] left-[-20%] w-[70%] h-[70%] rounded-full blur-[130px] pointer-events-none z-0 ${
+        theme === "dark" ? "bg-primary-900/10" : "bg-primary-300/25"
+      }`} />
+      <div className={`absolute bottom-[-30%] right-[-20%] w-[70%] h-[70%] rounded-full blur-[130px] pointer-events-none z-0 ${
+        theme === "dark" ? "bg-teal-900/10" : "bg-teal-300/25"
+      }`} />
       
       {/* Dynamic 3D particles and mouse follows */}
-      <ThreeBackground />
-      <MouseGlow />
+      <ThreeBackground theme={theme} />
+      <MouseGlow theme={theme} />
 
       {/* Sidebar Navigation */}
       <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900/30 border-r border-slate-800/80 backdrop-blur-xl text-slate-100 transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col z-30`}>

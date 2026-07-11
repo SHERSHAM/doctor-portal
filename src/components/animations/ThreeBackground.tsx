@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-export default function ThreeBackground() {
+export default function ThreeBackground({ theme = "dark" }: { theme?: "dark" | "light" }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,12 +45,14 @@ export default function ThreeBackground() {
 
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
+    const isDark = theme === "dark";
+
     const material = new THREE.PointsMaterial({
       size: 0.08,
-      color: 0x20c9ad, // Clinical Teal
+      color: isDark ? 0x20c9ad : 0x0c9488, // Clinical Teal (darker for light mode contrast)
       transparent: true,
-      opacity: 0.4,
-      blending: THREE.AdditiveBlending,
+      opacity: isDark ? 0.4 : 0.65,
+      blending: isDark ? THREE.AdditiveBlending : THREE.NormalBlending,
       depthWrite: false,
     });
 
@@ -64,11 +66,11 @@ export default function ThreeBackground() {
 
     // Material for the holographic wireframe tooth
     const toothMaterial = new THREE.MeshBasicMaterial({
-      color: 0x3b63f7, // Royal Indigo Accent
+      color: isDark ? 0x3b63f7 : 0x1d4ed8, // Royal Indigo Accent (darker for light mode contrast)
       wireframe: true,
       transparent: true,
-      opacity: 0.35,
-      blending: THREE.AdditiveBlending,
+      opacity: isDark ? 0.35 : 0.55,
+      blending: isDark ? THREE.AdditiveBlending : THREE.NormalBlending,
     });
 
     // 1. Crown Cusps (4 spheres at top of molar)
@@ -164,7 +166,7 @@ export default function ThreeBackground() {
       toothMaterial.dispose();
       renderer.dispose();
     };
-  }, []);
+  }, [theme]);
 
   return (
     <div

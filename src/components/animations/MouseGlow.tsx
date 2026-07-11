@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export default function MouseGlow() {
+export default function MouseGlow({ theme = "dark" }: { theme?: "dark" | "light" }) {
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,8 +42,9 @@ export default function MouseGlow() {
         top: 0,
         width: 400,
         height: 400,
-        background:
-          "radial-gradient(circle, rgba(59,99,247,0.06) 0%, transparent 70%)",
+        background: theme === "dark"
+          ? "radial-gradient(circle, rgba(59,99,247,0.06) 0%, transparent 70%)"
+          : "radial-gradient(circle, rgba(59,99,247,0.15) 0%, transparent 70%)",
         willChange: "transform, opacity", // Hint to GPU to composite this layer
       }}
     />
